@@ -21,9 +21,11 @@ earns its place by doing four things:
    lately, judging dark outfits by texture, silhouette, formality and hardware
    rather than colour.
 3. Keep a wear log, so cost per wear and "not worn in a while" are facts.
-4. Keep every record on the phone. Only two things leave it: a redacted 768 px
-   photo for tagging and a short text list of candidate outfits, both on the
-   user's own OpenRouter key.
+4. Prefill each item's brand, condition and second-hand value from the same
+   photo, as guesses the user can correct, and learn from those corrections.
+5. Keep every record on the phone. Only three things leave it, all on the
+   user's own OpenRouter key: a redacted 768 px photo for tagging, a short text
+   list of candidate outfits, and, on request, a text-only value re-estimate.
 
 ### Non-goals
 
@@ -41,6 +43,7 @@ user, Android, 3D or AI try-on (see §14), web or PWA build.
 | Background removal | Apple Vision `VNGenerateForegroundInstanceMaskRequest` (iOS 17+) in a small local Expo module | Same engine as Photos' "lift subject"; on device; no model download; no Apple Intelligence needed |
 | Face privacy | Vision `VNDetectFaceRectanglesRequest` in the same call; faces on worn photos are filled solid in the copy sent for tagging; worn photos go only to models that do not collect data | The user chose "no manual crop"; a solid fill cannot be undone by a model |
 | LLM | OpenRouter, OpenAI-compatible chat completions, user's own key in `expo-secure-store`; user-editable `models` fallback list; one-time $10 top-up | $10 lifts the free cap from 50 to 1000 requests/day and funds paid models at about $0.001–0.002 per photo, enough to tag 100–200 items in one evening |
+| Resale value | The tagging call also returns brand (only when a logo or label is visible), condition, visible flaws and a second-hand value range in TRY. Every AI guess is marked until the user edits it. A per-user correction factor (median of the user's corrections) scales new estimates | The user wants a prepared first draft, knowing it can be wrong. No extra request per item. LLM price knowledge is dated and TRY moves fast, so the user's own corrections are the calibration |
 | Recommender | Local, rule-based, pure TypeScript in `src/core/`; then one LLM call to pick 3 of the top 10 and explain each in one Turkish sentence | Works with no key; testable on Node |
 | Weather | Open-Meteo forecast + geocoding, no key, cached 60 min | Free for non-commercial use, CC BY 4.0 attribution |
 | Backup | One zip (data JSON + photo files), streamed with `fflate`, shared through `expo-sharing`; staged import with a durable safety copy | The only way data survives a reinstall or the Expo Go → preview move (separate sandboxes) |
@@ -57,7 +60,7 @@ next milestone.
 |---|---|---|---|
 | **M0 Skeleton** | "It opens on my phone" | Project on SDK 58 with zirt-dongum patterns copied (Db, migrations, theme, `makeStyles`, `Text`, labels, vitest), four tabs, dark theme, network guard, `.gitignore`, public-repo gate, README | Opens in Expo Go; `npm test`, `npm run typecheck`, `npx expo export -p ios` and `npm run check:public` pass; README covers Windows setup, `npx expo start` (LAN, else `--tunnel`), Expo Go login and the gates |
 | **M1 Wardrobe** | "My clothes are in it" | Add item from camera or library with a photo kind (flat / hanger / worn), alpha check, resize, crash-safe save; manual tag form; grid with filters; item detail and edit; status; backup export and staged import; backup nudge | Five items added by hand; exported to Files; the app's data deleted and restored from that zip with identical items and photos |
-| **M2 AI tagging** | "It tags for me" | Key entry, editable model list, JS-side LLM image, tagging call, draft items, crash-safe queue with its own screen, quota badge, Turkish errors | 100–200 flat/hanger items added in one evening; killing the app mid-queue loses no result; worn photos wait in the queue for N1 |
+| **M2 AI tagging** | "It tags for me" | Key entry, editable model list, JS-side LLM image, tagging call (tags + brand, condition, resale value), AI-guess markers, value correction factor, "Değeri yeniden tahmin et", wardrobe value line, draft items, crash-safe queue with its own screen, quota badge, Turkish errors | 100–200 flat/hanger items added in one evening; killing the app mid-queue loses no result; worn photos wait in the queue for N1; after three value corrections, new estimates show the correction factor |
 | **M3 Outfits** | "I can record what I wear" | Outfit builder by slot (all slots, accessories included), save and rate (-1/0/1), "Bugün bunu giydim" with an optional mirror photo, wear log, cost per wear | Three wear-log entries survive an app restart; cost per wear shows on an item with a price |
 | **M4 Bugün ne giysem** | "It dresses me in the morning" | Weather, occasion rules editable in Settings, rule engine with tests, local top 3 at once, one LLM call upgrades the reasons, keyless mode | With three ratings in the database, changing the date gives a different list and a −1 outfit never appears; with the key removed, three suggestions still appear |
 | **N1 Native vision** | "It cleans my photos" | `eas.json`, `app.config.ts` variants, `eas device:create`, Developer Mode, dev client, local module `wardrobe-vision`, preview build, Expo Go → preview data move, device test on 20 real photos, one-time reprocess of stored originals, worn queue released | Dev build and preview build installed; Expo Go backup restored into the preview copy and checked; flat/hanger photos show as cut-outs; a worn photo goes to tagging with the face filled; README gains the build, install and yearly-rebuild steps |
@@ -133,7 +136,7 @@ SQLite, snake_case columns, English names. Enums are stored as English keys;
 
 | Table | Columns |
 |---|---|
-| `items` | `id` TEXT pk, `status` (draft · active · laundry · archived · wishlist), `slot` (top · mid · bottom · onepiece · shoes · outer · accessory · headwear; NULL only for drafts), `subcategory`, `colors` JSON, `material`, `texture`, `pattern`, `silhouette` (fitted · regular · relaxed · oversized), `formality` 1–5, `warmth` 1–5, `seasons` JSON, `details` JSON, `notes`, `price` NULL, `acquired_at` NULL, `primary_photo_id`, `tag_source` (ai · manual · NULL), `tag_model` NULL, `created_at`, `updated_at` |
+| `items` | `id` TEXT pk, `status` (draft · active · laundry · archived · wishlist), `slot` (top · mid · bottom · onepiece · shoes · outer · accessory · headwear; NULL only for drafts), `subcategory`, `colors` JSON, `material`, `texture`, `pattern`, `silhouette` (fitted · regular · relaxed · oversized), `formality` 1–5, `warmth` 1–5, `seasons` JSON, `details` JSON, `notes`, `brand` NULL, `condition` (new_with_tags · like_new · good · worn · poor; NULL), `condition_notes` JSON NULL, `resale` JSON NULL, `ai_fields` JSON, `price` NULL, `acquired_at` NULL, `primary_photo_id`, `tag_source` (ai · manual · NULL), `tag_model` NULL, `created_at`, `updated_at` |
 | `photos` | `id` TEXT pk (`^[A-Za-z0-9_-]{8,64}$`), `item_id` NULL, `outfit_id` NULL, `kind` (flat · hanger · worn · outfit), `original_ext` (jpg · png), `cutout_state` (none · pending · done · failed), `face_state` (n/a · pending · filled · none_found · confirmed), `created_at` |
 | `outfits` | `id` pk, `key` unique, `source` (manual · engine · llm), `rating` (-1 · 0 · 1 · NULL), `saved_occasion` NULL, `photo_id` NULL, `created_at` |
 | `outfit_items` | `outfit_id`, `item_id`, `slot` |
@@ -155,6 +158,14 @@ SQLite, snake_case columns, English names. Enums are stored as English keys;
   the occasion.
 - **Derived, never stored:** `wear_count`, `last_worn_at`, cost per wear (from
   `wear_log`); job waiting reasons (§7).
+- **Resale value.** `resale` = `{low, high, aiMid, basis, model, at, source}`
+  in TRY: `basis` is one Turkish sentence ("Levi's 501, iyi durumda, ikinci
+  elde genelde bu aralıkta"), `aiMid` keeps the model's midpoint after a user
+  edit, `source` is `ai` or `user`. `price` stays the purchase price the user
+  types; cost per wear uses only `price`.
+- **AI guesses.** `ai_fields` lists the fields still holding an unedited AI
+  guess (e.g. `["brand", "condition", "resale"]`). The UI marks them "AI
+  tahmini"; editing a field removes it from the list.
 - An item can hold several photos: the primary one (grid image, the only one
   ever sent for tagging) and extra worn fit photos for oversize pieces.
 - The OpenRouter key lives only in `expo-secure-store` and never enters a
@@ -282,14 +293,34 @@ The quota badge reads `GET /api/v1/key` (free requests left today).
 6. The suggestion payload is built from a field allowlist: short id, slot,
    subcategory, colours, material, texture, pattern, silhouette, formality,
    warmth, details; plus band, rain flag and occasion. Never notes, price,
-   dates, city, coordinates, file names or ids from the database.
+   brand, condition, resale value, dates, city, coordinates, file names or ids
+   from the database.
 
 ### Tagging call
 
 One call per item. The prompt asks for the tag vocabulary of §5 as strict
 JSON (slot, subcategory, colours, material, texture, pattern, silhouette,
-formality, warmth, seasons, details). The result is stored on the job and
-prefills the review form.
+formality, warmth, seasons, details) plus:
+
+- `brand`: only if a logo or label is readable on the photo, else null (no
+  guessing from style);
+- `condition` from the §5 enum and `condition_notes`: visible flaws in short
+  Turkish phrases ("hafif tüylenme", "yakada solma"), empty when none;
+- `resale`: `{low, high, basis}` in TRY for the Turkish second-hand market
+  today (the prompt carries the current date), judged from brand, type,
+  material and condition.
+
+The result is stored on the job and prefills the review form; all of these
+fields start in `ai_fields`.
+
+**Value correction factor** (`src/core/resale.ts`). Once at least 3 items
+have `source = user` with an `aiMid`, factor = median of `userMid / aiMid`,
+clamped to [0.25, 4]. New estimates are multiplied by it and the item shows
+"senin düzeltmelerine göre ×1,3". Below 3 corrections the factor is 1.
+
+**Re-estimate call.** When the user changes brand or condition, "Değeri
+yeniden tahmin et" sends one text-only request (slot, subcategory, material,
+brand, condition, notes on flaws; no image). Never automatic.
 
 ### Suggestion call
 
@@ -466,10 +497,10 @@ active; export first.
 
 | Tab / route | Content |
 |---|---|
-| Gardırop (`index`) | Thumbnail grid, filter chips (slot, formality, season, texture, status), queue badge, backup banner, "+" to add |
+| Gardırop (`index`) | Thumbnail grid, filter chips (slot, formality, season, texture, status), one line "Tahmini ikinci el değeri: X–Y TL" for the filtered items, queue badge, backup banner, "+" to add |
 | Ekle (`add`, modal) | Kind choice → camera/library → preview → manual form, or "AI'a bırak"; bulk mode keeps the camera open and only queues |
 | Kuyruk (`queue`) | Drafts with thumb, job state and waiting reason; "Onayla" opens the prefilled review form; "Yeniden dene" per failed row and for all; the face-preview confirm for worn photos with no face found |
-| Parça (`item/[id]`) | Photos (primary + fit photos), tags, wear count, cost per wear, status |
+| Parça (`item/[id]`) | Photos (primary + fit photos), tags, brand, condition and flaws, resale range with its one-sentence basis, "AI tahmini" marks, "Değeri yeniden tahmin et", wear count, cost per wear, status |
 | Kombinler (`outfits`) | Saved outfits, builder by slot (accessories and headwear included), rate, "Bugün bunu giydim" with optional mirror photo |
 | Bugün (`today`) | Weather line, occasion chips, 3 suggestions with reasons, "Bunu giydim" and 👍/👎, "Yenile" |
 | Ayarlar (`settings`) | Key, models (edit, reorder, refresh free list), free-only, quota, city, occasion rules, backup (last export date, export, import, restore safety copy), attribution, build date |
@@ -480,7 +511,9 @@ Dark theme by default.
 
 **Vitest on Node** (`node:sqlite` behind the `Db` interface):
 
-- `src/core/**`, including the 12 recommender tests.
+- `src/core/**`, including the 12 recommender tests and the value correction
+  factor (fewer than 3 corrections → 1; median, not mean; clamped; an edited
+  field leaves `ai_fields`).
 - Repositories and migrations: every N → N+1 migration on seeded data keeps
   rows and values; a migration that throws midway leaves the database at N
   (zirt-dongum `dbAtVersion` pattern).
@@ -524,6 +557,7 @@ recorded in the plan with their results.
 | fflate export and import of ~200 photos: time and memory | M1 | Split the export into parts of ~50 photos; `react-native-zip-archive` after N1 |
 | `expo-sharing` offers "Dosyalar'a Kaydet" for a zip | M1 | Another share target (iCloud Drive) |
 | Free models return valid JSON for clothing photos; `reasoning.effort` keeps reasoning tokens low | M2 | Paid model first; `reasoning: {max_tokens: 0}` |
+| Brand, condition and value on 20 items whose real resale range the user knows: how far off, and does a 768 px photo show pilling or fading at all | M2 | Ask for an optional close-up photo for condition; lean on the correction factor |
 | Vision cut-out quality on flat, hanger and worn photos; latency at 2048 px | N1 | Keep originals as display images |
 | Face detection on mirror selfies | N1 | Confirm-preview path (§7) |
 | Restore into a wiped copy at every move (Expo Go → preview) | N1 | Keep the old copy until it passes |
@@ -543,6 +577,12 @@ recorded in the plan with their results.
 - **Share extension.** Needed for "Bunu alsam mı?"; later, needs a dev build.
 - **TestFlight and EAS Update.** Ad hoc preview builds cover one person;
   revisit when rebuilding for every JS change becomes a chore.
+- **Live market prices.** Checking resale values against current listings
+  (a web-search-enabled model) would be more accurate for known brands but
+  costs extra per item; revisit if the correction factor is not enough.
+- **A trained price model.** There is no labelled data to train one; the
+  user's corrections are the only ground truth, and the correction factor
+  uses them.
 
 ## 15. Facts this design rests on (checked 2026-10-26 / 28)
 
@@ -571,4 +611,5 @@ Full research digests: workflow runs `wf_73b7b5c2-93b` (2026-10-26),
 | 2026-10-28 | Expo native instead of PWA (Apple Developer account coming) |
 | 2026-10-28 | $10 OpenRouter top-up for the bulk import |
 | 2026-10-28 | Faces filled automatically on device before upload; no manual crop; worn photos only to non-collecting (paid) models |
+| 2026-10-28 | Second-hand value, brand and condition prefilled by the tagging call as editable AI guesses; user corrections calibrate later estimates |
 | 2026-10-28 | Spec review: draft items and a stored job result; staged import with a durable safety copy; paths derived from ids; one preview build as the primary copy instead of TestFlight; recommender weights as constants, only occasion rules editable; `impressions`, exploration slots and weather bonuses cut |
