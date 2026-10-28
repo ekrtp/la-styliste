@@ -3,7 +3,9 @@ import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
+/** Root of src/, scanned for forbidden theme imports. */
 const SRC = fileURLToPath(new URL('../../', import.meta.url));
+/** This folder: the only place allowed to import dark, light and base. */
 const THEMES = fileURLToPath(new URL('./', import.meta.url));
 
 function sourceFiles(dir: string): string[] {
