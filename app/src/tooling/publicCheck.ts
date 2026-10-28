@@ -33,3 +33,19 @@ export function findProblems(files: readonly StagedFile[], addedLines: readonly 
   }
   return problems;
 }
+
+/**
+ * The added lines ("+..." with the marker kept) of a `git diff` output, hunk bodies only.
+ * File headers ("+++ b/...") sit between "diff --git" and the first "@@", so they are skipped by position,
+ * not by prefix: an added line whose content starts with "++" must still be returned and scanned.
+ */
+export function addedLines(diff: string): string[] {
+  const lines: string[] = [];
+  let inHunk = false;
+  for (const line of diff.split('\n')) {
+    if (line.startsWith('diff --git')) inHunk = false;
+    else if (line.startsWith('@@')) inHunk = true;
+    else if (inHunk && line.startsWith('+')) lines.push(line);
+  }
+  return lines;
+}

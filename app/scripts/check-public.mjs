@@ -2,7 +2,7 @@
 // Node strips the types of the imported .ts file (Node 22.18+ / 24).
 // The script is ESM importing a .ts helper in a typeless package; the npm script silences only that one Node warning.
 import { execFileSync } from 'node:child_process';
-import { findProblems } from '../src/tooling/publicCheck.ts';
+import { addedLines, findProblems } from '../src/tooling/publicCheck.ts';
 
 /** Generous output limit: a large staged diff must not crash the gate. */
 const MAX_OUTPUT = 256 * 1024 * 1024;
@@ -17,9 +17,7 @@ const files = paths.map((path) => ({
   // numstat prints "-<TAB>-" for a binary file.
   binary: git('diff', '--cached', '--numstat', '--', path).startsWith('-\t-\t'),
 }));
-const added = git('diff', '--cached', '-U0', '--no-color')
-  .split('\n')
-  .filter((line) => line.startsWith('+') && !line.startsWith('+++'));
+const added = addedLines(git('diff', '--cached', '-U0', '--no-color'));
 
 const problems = findProblems(files, added);
 if (problems.length > 0) {
