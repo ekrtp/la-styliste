@@ -1833,3 +1833,37 @@ On the PC, from `app/`: `npx expo start`. On the iPhone, open the project in Exp
 4. Choose "Sistem", switch the phone's appearance in Control Centre: the app follows.
 
 Record the result (pass, or what failed) in this plan under the step, then M0 is done.
+
+---
+
+## Outcome and handover to M1 (2026-10-28)
+
+Tasks 1–7 are implemented, each passed a task review, and a whole-branch review passed after one fix wave
+(59 tests, typecheck and the iOS export clean, `check:public` runs as a versioned pre-commit hook).
+**Step 7 (device check) is still the author's**: M1 does not start until its result is recorded above.
+
+Changes against this plan's text, decided during execution:
+
+- The source walker is shared (`src/testing/sourceFiles.ts`) and scans `.ts/.tsx/.js/.jsx/.mjs/.cjs`.
+- The network guard parses every `http(s)://` literal with `URL` and checks the hostname; `expo/fetch` counts as an HTTP client.
+- `inTransaction` keeps the original error when `ROLLBACK` itself fails.
+- The commit gate reads added lines by hunk position, ignores user diff config, refuses images, video, archives and
+  databases outside `app/assets/`, and runs from `.githooks/pre-commit` (`git config core.hooksPath .githooks` once per clone).
+- The template's `app/.claude/` and `app/LICENSE` were removed; `app/AGENTS.md` points at the four gates.
+
+The M1 plan starts with these, in this order:
+
+1. `Db.transaction(work)` that serialises access to the one connection (`withExclusiveTransactionAsync` on the phone,
+   a promise-chain mutex in tests); migrations read `user_version` inside their transaction.
+2. `Db.close()` and one owner of the connection; AppData closes failed or superseded attempts.
+3. Backup before migrate with `backupDatabaseAsync` or `VACUUM INTO`, not a file copy (WAL keeps pages in `-wal`).
+4. `PRAGMA foreign_keys = ON` in both adapters right after opening, before the M1 tables arrive.
+5. Recovery screen actions that branch on the error: `SchemaTooNewError` cannot be retried; raw export and restore `.bak`.
+6. `updateSettings` merges only known setting names; a mixed valid+invalid patch test once a second setting exists.
+7. Splash until the database is ready, with the root navigator kept mounted (removes the one dark frame on cold start).
+8. Image test fixtures are built as bytes in code: the gate refuses image files outside `app/assets/`.
+
+Later: Text variant display names; the navigation `notification` colour; font weights into `typeScale`; error lines
+announced to screen readers; `radio` role for the theme options; `THEME_MODES` defined once; `app/assets/` exemption by
+file list or size; the §12 logging rule (M2); scan `modules/wardrobe-vision/` at N1; package name at N1; a licence and
+real app icons before the app is shared (the repo has no licence yet and still carries Expo's template icons).
