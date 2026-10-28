@@ -26,6 +26,23 @@
       "expo-status-bar",
       "expo-sqlite"
     ],
-    "scheme": "lastyliste"
+    "scheme": "lastyliste",
+    "owner": "ekrtp",
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "409eabed-8125-4ab5-b14f-30699904ab79"
+      }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/409eabed-8125-4ab5-b14f-30699904ab79"
+    },
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    }
   }
 }
