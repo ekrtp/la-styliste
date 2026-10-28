@@ -1,5 +1,6 @@
 // Commit gate for the public repo (spec §12): refuses staged photos, archives, large binaries and secrets.
 // Node strips the types of the imported .ts file (Node 22.18+ / 24).
+// The script is ESM importing a .ts helper in a typeless package; the npm script silences only that one Node warning.
 import { execFileSync } from 'node:child_process';
 import { findProblems } from '../src/tooling/publicCheck.ts';
 

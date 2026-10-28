@@ -27,7 +27,7 @@
     "ios": "expo start --ios",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "check:public": "node scripts/check-public.mjs"
+    "check:public": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-public.mjs"
   },
   "private": true
 }
