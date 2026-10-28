@@ -8,6 +8,47 @@ export const MIGRATIONS: readonly string[] = [
      key TEXT PRIMARY KEY,
      value TEXT NOT NULL
    );`,
+  // M1a: wardrobe items and their photos (spec §5). Tables of later milestones arrive with them.
+  `CREATE TABLE items (
+     id TEXT PRIMARY KEY,
+     status TEXT NOT NULL CHECK (status IN ('draft', 'active', 'laundry', 'archived', 'wishlist')),
+     slot TEXT CHECK (slot IN ('top', 'mid', 'bottom', 'onepiece', 'shoes', 'outer', 'accessory', 'headwear')),
+     subcategory TEXT,
+     colors TEXT NOT NULL DEFAULT '[]',
+     material TEXT,
+     texture TEXT,
+     pattern TEXT,
+     silhouette TEXT CHECK (silhouette IN ('fitted', 'regular', 'relaxed', 'oversized')),
+     formality INTEGER CHECK (formality BETWEEN 1 AND 5),
+     warmth INTEGER CHECK (warmth BETWEEN 1 AND 5),
+     seasons TEXT NOT NULL DEFAULT '[]',
+     details TEXT NOT NULL DEFAULT '[]',
+     notes TEXT,
+     brand TEXT,
+     condition TEXT CHECK (condition IN ('new_with_tags', 'like_new', 'good', 'worn', 'poor')),
+     condition_notes TEXT,
+     resale TEXT,
+     ai_fields TEXT NOT NULL DEFAULT '[]',
+     price REAL,
+     acquired_at TEXT,
+     primary_photo_id TEXT,
+     tag_source TEXT CHECK (tag_source IN ('ai', 'manual')),
+     tag_model TEXT,
+     created_at TEXT NOT NULL,
+     updated_at TEXT NOT NULL,
+     CHECK (slot IS NOT NULL OR status = 'draft')
+   );
+   CREATE TABLE photos (
+     id TEXT PRIMARY KEY,
+     item_id TEXT REFERENCES items(id) ON DELETE CASCADE,
+     outfit_id TEXT,
+     kind TEXT NOT NULL CHECK (kind IN ('flat', 'hanger', 'worn', 'outfit')),
+     original_ext TEXT NOT NULL CHECK (original_ext IN ('jpg', 'png')),
+     cutout_state TEXT NOT NULL CHECK (cutout_state IN ('none', 'pending', 'done', 'failed')),
+     face_state TEXT NOT NULL CHECK (face_state IN ('n/a', 'pending', 'filled', 'none_found', 'confirmed')),
+     created_at TEXT NOT NULL
+   );
+   CREATE INDEX photos_item_id ON photos (item_id);`,
 ];
 
 export interface MigrateOptions {

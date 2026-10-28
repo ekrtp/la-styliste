@@ -46,6 +46,17 @@ describe('migrate', () => {
     expect(await db.all("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'b'")).toEqual([{ name: 'b' }]);
   });
 
+  it('keeps the M0 settings when it adds the wardrobe tables (v1 to v2)', async () => {
+    const db = await dbAtVersion(1, MIGRATIONS);
+    await db.run('INSERT INTO settings (key, value) VALUES (?, ?)', ['theme_mode', '"light"']);
+    await migrate(db);
+    expect(await db.all('SELECT key, value FROM settings')).toEqual([{ key: 'theme_mode', value: '"light"' }]);
+    expect(await db.all("SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('items', 'photos') ORDER BY name")).toEqual([
+      { name: 'items' },
+      { name: 'photos' },
+    ]);
+  });
+
   it('refuses a database written by a newer build', async () => {
     const db = await dbAtVersion(MIGRATIONS.length, MIGRATIONS);
     await db.exec(`PRAGMA user_version = ${MIGRATIONS.length + 3}`);
