@@ -14,15 +14,20 @@ Status: **M0 skeleton** — four empty tabs, settings, the guards. See the relea
 
 ## Run it on the iPhone
 
+Publish the current code as an EAS Update and open it in Expo Go; no dev server or shared Wi-Fi is needed:
+
 ```bash
 cd app
 npm install
-npx expo login          # once, same account as in Expo Go
-npx expo start
+npx eas-cli@latest login     # once, the account that owns the project (same as in Expo Go)
+npx eas-cli@latest update --branch preview --platform ios --environment preview --message "<what changed>"
 ```
 
-Scan the QR code with the iPhone camera; it opens in Expo Go. The phone and the PC must be on the same Wi-Fi.
-If the network isolates devices (guest or office Wi-Fi), use `npx expo start --tunnel` instead.
+Open the printed EAS Dashboard link → **Preview** → scan the QR code with the iPhone camera. Expo Go must be
+signed in to the account that owns the project. `runtimeVersion` is pinned to the SDK version, because Expo Go only
+loads updates built for its own SDK.
+
+On a network where the phone can reach the PC, `npx expo start` (or `--tunnel`) gives live reload instead.
 
 ## Checks before every commit
 

@@ -1825,7 +1825,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 
 - [ ] **Step 7: Device check (the author, not an agent)**
 
-On the PC, from `app/`: `npx expo start`. On the iPhone, open the project in Expo Go and check:
+Publish with `npx eas-cli@latest update --branch preview --platform ios --environment preview` (README, "Run it on the iPhone"), open the update's Preview QR in Expo Go and check:
 
 1. Four tabs: Gardırop, Kombinler, Bugün, Ayarlar, with icons, on a near-black background.
 2. Ayarlar → Görünüm: "Açık" switches the app to light at once; "Koyu" switches back.
