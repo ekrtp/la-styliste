@@ -26,6 +26,8 @@ If the network isolates devices (guest or office Wi-Fi), use `npx expo start --t
 
 ## Checks before every commit
 
+Once per clone, run `git config core.hooksPath .githooks`: the commit gate then runs on every commit.
+
 Run from `app/`:
 
 ```bash

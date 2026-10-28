@@ -1,0 +1,3 @@
+#!/bin/sh
+# Public-repo gate (spec §12): refuse staged photos, archives, databases, large binaries and keys.
+exec npm --prefix app run --silent check:public
