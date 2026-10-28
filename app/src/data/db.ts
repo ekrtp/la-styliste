@@ -16,7 +16,8 @@ export async function inTransaction<T>(db: Db, work: () => Promise<T>): Promise<
     await db.exec('COMMIT');
     return result;
   } catch (e) {
-    await db.exec('ROLLBACK');
+    // SQLite may already have rolled back on its own (disk full, I/O error); a failing ROLLBACK must not hide the real error.
+    await db.exec('ROLLBACK').catch(() => {});
     throw e;
   }
 }

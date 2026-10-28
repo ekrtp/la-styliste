@@ -31,9 +31,18 @@ describe('migrate', () => {
     expect(await db.all("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'b'")).toEqual([]);
   });
 
+  it('runs only the steps after the current version', async () => {
+    const steps = ['CREATE TABLE a (x INTEGER);', 'CREATE TABLE b (y INTEGER);'];
+    const db = await dbAtVersion(1, steps);
+    expect(await migrate(db, steps)).toBe(2);
+    expect(await version(db)).toBe(2);
+    expect(await db.all("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'b'")).toEqual([{ name: 'b' }]);
+  });
+
   it('refuses a database written by a newer build', async () => {
     const db = await dbAtVersion(MIGRATIONS.length, MIGRATIONS);
     await db.exec(`PRAGMA user_version = ${MIGRATIONS.length + 3}`);
     await expect(migrate(db)).rejects.toBeInstanceOf(SchemaTooNewError);
+    expect(await version(db)).toBe(MIGRATIONS.length + 3);
   });
 });
