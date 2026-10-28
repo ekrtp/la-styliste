@@ -53,3 +53,43 @@ describe('migrate', () => {
     expect(await version(db)).toBe(MIGRATIONS.length + 3);
   });
 });
+
+describe('migrate: copy before an upgrade', () => {
+  const steps = ['CREATE TABLE a (x INTEGER);', 'CREATE TABLE b (y INTEGER);'];
+
+  it('calls beforeUpgrade once, with the starting version, when an existing database is upgraded', async () => {
+    const db = await dbAtVersion(1, steps);
+    const calls: number[] = [];
+    await migrate(db, steps, {
+      beforeUpgrade: async (from) => {
+        calls.push(from);
+      },
+    });
+    expect(calls).toEqual([1]);
+  });
+
+  it('does not call it for a fresh database or a current one', async () => {
+    const calls: number[] = [];
+    const options = {
+      beforeUpgrade: async (from: number) => {
+        calls.push(from);
+      },
+    };
+    const db = openMemoryDb();
+    await migrate(db, steps, options);
+    await migrate(db, steps, options);
+    expect(calls).toEqual([]);
+  });
+
+  it('upgrades nothing when the copy fails', async () => {
+    const db = await dbAtVersion(1, steps);
+    await expect(
+      migrate(db, steps, {
+        beforeUpgrade: async () => {
+          throw new Error('disk full');
+        },
+      }),
+    ).rejects.toThrow('disk full');
+    expect(await version(db)).toBe(1);
+  });
+});

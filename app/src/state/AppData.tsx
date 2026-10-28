@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { Db } from '../data/db';
-import { openAppDb } from '../data/expoDb';
-import { migrate } from '../data/migrations';
+import { backupBeforeUpgrade, openAppDb } from '../data/expoDb';
+import { MIGRATIONS, migrate } from '../data/migrations';
 import { DEFAULT_SETTINGS, loadSettings, saveSettings, type AppSettings } from '../data/settings';
 
 export interface AppData {
@@ -27,8 +27,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     let live = true;
     setError(null);
     (async () => {
-      const { db: opened } = await openAppDb();
-      await migrate(opened);
+      const { db: opened, path } = await openAppDb();
+      await migrate(opened, MIGRATIONS, { beforeUpgrade: (from) => backupBeforeUpgrade(opened, path, from) });
       const loaded = await loadSettings(opened);
       if (!live) return;
       setSettings(loaded);
