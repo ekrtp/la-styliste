@@ -27,6 +27,21 @@ function networkUses(source: string): string[] {
   return NETWORK.filter(({ re }) => re.test(source)).map(({ what }) => what);
 }
 
+/** Characters that may end a host in a URL; anything else (such as "@") means the host is not what it looks like. */
+const HOST_TERMINATORS = ['/', ':', '?', '#', "'", '"', '`'];
+
+// ponytail: a scheme-relative //host or a host built by string concatenation is not seen; review src/net/ by hand when it grows.
+/** Every http(s):// in `source` whose host is not exactly an allowed one; each entry is the next 40 characters after the scheme. */
+function disallowedHosts(source: string): string[] {
+  return [...source.matchAll(/https?:\/\//gi)]
+    .map((m) => source.slice(m.index + m[0].length))
+    .filter((rest) => {
+      const lower = rest.toLowerCase();
+      return !ALLOWED_HOSTS.some((h) => lower.startsWith(h) && (lower.length === h.length || HOST_TERMINATORS.includes(lower[h.length])));
+    })
+    .map((rest) => rest.slice(0, 40));
+}
+
 /** Root of src/, scanned for network code. */
 const SRC = fileURLToPath(new URL('./', import.meta.url));
 /** The only folder allowed to reach a network. */
@@ -55,6 +70,24 @@ describe('the network detector', () => {
   });
 });
 
+describe('the host check', () => {
+  it.each([
+    ['an OpenRouter URL', `'https://openrouter.ai/api/v1'`],
+    ['an Open-Meteo URL', '`https://api.open-meteo.com/v1/forecast?x=1`'],
+    ['an upper-case host', `'HTTPS://OPENROUTER.AI/x'`],
+  ])('lets through %s', (_name, source) => {
+    expect(disallowedHosts(source)).toEqual([]);
+  });
+
+  it.each([
+    ['userinfo that hides the real host', `'https://openrouter.ai@evil.example/'`],
+    ['a template host', '`https://${host}/x`'],
+    ['another host', `'https://evil.example'`],
+  ])('catches %s', (_name, source) => {
+    expect(disallowedHosts(source)).toHaveLength(1);
+  });
+});
+
 describe('network code in the app', () => {
   const files = sourceFiles(SRC);
 
@@ -71,9 +104,7 @@ describe('network code in the app', () => {
   });
 
   it('talks only to the allowed hosts inside src/net/', () => {
-    const hosts = files
-      .filter((f) => f.startsWith(NET))
-      .flatMap((f) => [...readFileSync(f, 'utf8').matchAll(/https?:\/\/([a-z0-9.-]+)/gi)].map((m) => m[1].toLowerCase()));
-    expect(hosts.filter((h) => !ALLOWED_HOSTS.includes(h))).toEqual([]);
+    const hosts = files.filter((f) => f.startsWith(NET)).flatMap((f) => disallowedHosts(readFileSync(f, 'utf8')));
+    expect(hosts).toEqual([]);
   });
 });
