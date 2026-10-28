@@ -17,7 +17,7 @@ const NETWORK = [
   { what: 'WebSocket', re: /\bWebSocket\b/ },
   { what: 'EventSource', re: /\bEventSource\b/ },
   { what: 'sendBeacon', re: /\bsendBeacon\b/ },
-  { what: 'an HTTP client import', re: /(?:\bfrom\s*|\brequire\s*\(\s*|\bimport\s*\(?\s*)['"](?:axios|ky|expo-network)(?:\/[^'"]*)?['"]/ },
+  { what: 'an HTTP client import', re: /(?:\bfrom\s*|\brequire\s*\(\s*|\bimport\s*\(?\s*)['"](?:axios|ky|expo-network|expo\/fetch)(?:\/[^'"]*)?['"]/ },
   // Every expo-file-system download or upload API has one of these words in its name. Fails closed: reword a comment that uses them.
   { what: 'a download or upload', re: /\b\w*(?:download|upload)\w*\b/i },
   { what: 'an http(s) URL', re: /['"`]https?:\/\//i },
@@ -27,19 +27,16 @@ function networkUses(source: string): string[] {
   return NETWORK.filter(({ re }) => re.test(source)).map(({ what }) => what);
 }
 
-/** Characters that may end a host in a URL; anything else (such as "@") means the host is not what it looks like. */
-const HOST_TERMINATORS = ['/', ':', '?', '#', "'", '"', '`'];
-
 // ponytail: a scheme-relative //host or a host built by string concatenation is not seen; review src/net/ by hand when it grows.
-/** Every http(s):// in `source` whose host is not exactly an allowed one; each entry is the next 40 characters after the scheme. */
+/** Every http(s):// literal in `source` whose parsed host is not an allowed one (or that does not parse); each entry is the literal's first 60 characters. */
 function disallowedHosts(source: string): string[] {
-  return [...source.matchAll(/https?:\/\//gi)]
-    .map((m) => source.slice(m.index + m[0].length))
-    .filter((rest) => {
-      const lower = rest.toLowerCase();
-      return !ALLOWED_HOSTS.some((h) => lower.startsWith(h) && (lower.length === h.length || HOST_TERMINATORS.includes(lower[h.length])));
-    })
-    .map((rest) => rest.slice(0, 40));
+  return (source.match(/https?:\/\/[^\s'"`]*/gi) ?? []).filter((literal) => {
+    try {
+      return !ALLOWED_HOSTS.includes(new URL(literal).hostname.toLowerCase());
+    } catch {
+      return true;
+    }
+  }).map((literal) => literal.slice(0, 60));
 }
 
 /** Root of src/, scanned for network code. */
@@ -56,6 +53,7 @@ describe('the network detector', () => {
     ['XMLHttpRequest', `new XMLHttpRequest()`, ['XMLHttpRequest']],
     ['WebSocket', `new WebSocket(url)`, ['WebSocket']],
     ['axios', `import axios from 'axios';`, ['an HTTP client import']],
+    ['expo/fetch', `import { fetch as get } from 'expo/fetch';`, ['an HTTP client import']],
     ['File.downloadFileAsync', `await File.downloadFileAsync(url, dir)`, ['a download or upload']],
     ['createUploadTask', `file.createUploadTask(url)`, ['a download or upload']],
     ['an image from the web', `<Image source={{ uri: 'https://example.com/a.png' }} />`, ['an http(s) URL']],
@@ -75,6 +73,8 @@ describe('the host check', () => {
     ['an OpenRouter URL', `'https://openrouter.ai/api/v1'`],
     ['an Open-Meteo URL', '`https://api.open-meteo.com/v1/forecast?x=1`'],
     ['an upper-case host', `'HTTPS://OPENROUTER.AI/x'`],
+    ['an explicit port', `'https://openrouter.ai:443/api'`],
+    ['a template with a query placeholder', '`https://api.open-meteo.com/v1/forecast?latitude=${lat}`'],
   ])('lets through %s', (_name, source) => {
     expect(disallowedHosts(source)).toEqual([]);
   });
@@ -83,6 +83,8 @@ describe('the host check', () => {
     ['userinfo that hides the real host', `'https://openrouter.ai@evil.example/'`],
     ['a template host', '`https://${host}/x`'],
     ['another host', `'https://evil.example'`],
+    ['a fake port that hides the real host', `'https://openrouter.ai:x@evil.example/'`],
+    ['a port and userinfo that hide the real host', `'https://openrouter.ai:443@evil.example/'`],
   ])('catches %s', (_name, source) => {
     expect(disallowedHosts(source)).toHaveLength(1);
   });
