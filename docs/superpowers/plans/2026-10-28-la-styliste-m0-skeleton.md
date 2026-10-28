@@ -1834,13 +1834,16 @@ Publish with `npx eas-cli@latest update --branch preview --platform ios --enviro
 
 Record the result (pass, or what failed) in this plan under the step, then M0 is done.
 
+**Result (2026-10-28):** update group `a5d0cfed` published to branch `preview`. The author reported no failure, asked
+for the merge to `main` and for M1 to start; the four checks were not reported one by one.
+
 ---
 
 ## Outcome and handover to M1 (2026-10-28)
 
 Tasks 1–7 are implemented, each passed a task review, and a whole-branch review passed after one fix wave
 (59 tests, typecheck and the iOS export clean, `check:public` runs as a versioned pre-commit hook).
-**Step 7 (device check) is still the author's**: M1 does not start until its result is recorded above.
+Step 7 (device check) is recorded above. `feat/m0` was fast-forwarded into `main` on 2026-10-28.
 
 Changes against this plan's text, decided during execution:
 
