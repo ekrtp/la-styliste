@@ -29,5 +29,8 @@
     "typecheck": "tsc --noEmit",
     "check:public": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-public.mjs"
   },
+  "engines": {
+    "node": ">=22.18"
+  },
   "private": true
 }

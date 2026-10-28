@@ -9,11 +9,29 @@ dist/
 
 # User data never goes into this public repo: backups, photos, images outside the app's own assets
 *.zip
+*.tar
+*.gz
+*.tgz
+*.7z
+*.rar
 *.jpg
 *.jpeg
 *.png
 *.webp
 *.heic
+*.heif
+*.avif
+*.gif
+*.bmp
+*.tif
+*.tiff
+*.mp4
+*.mov
+*.m4v
+*.db
+*.sqlite
+*.sqlite3
+*.bak-v*
 !app/assets/**
 
 # Signing material and secrets

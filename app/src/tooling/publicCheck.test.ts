@@ -18,16 +18,20 @@ describe('findProblems', () => {
     ).toEqual([]);
   });
 
-  it('refuses photos and archives outside app/assets/', () => {
+  it('refuses images, video, archives and databases outside app/assets/', () => {
     expect(findProblems([{ path: 'docs/mirror.jpg', bytes: 10, binary: true }], [])).toEqual([
-      'docs/mirror.jpg: image or archive outside app/assets/',
+      'docs/mirror.jpg: image, video, archive or database outside app/assets/',
     ]);
     expect(findProblems([{ path: 'backup.zip', bytes: 10, binary: true }], [])).toHaveLength(1);
   });
 
+  it.each(['photo.GIF', 'local.sqlite', 'la-styliste.db.bak-v1', 'clip.mov'])('refuses %s', (path) => {
+    expect(findProblems([{ path, bytes: 10, binary: true }], [])).toEqual([`${path}: image, video, archive or database outside app/assets/`]);
+  });
+
   it('refuses a large binary outside app/assets/', () => {
     expect(findProblems([{ path: 'app/thing.bin', bytes: MAX_BINARY_BYTES + 1, binary: true }], [])).toEqual([
-      'app/thing.bin: binary over 200 KB outside app/assets/',
+      `app/thing.bin: binary over ${MAX_BINARY_BYTES / 1024} KB outside app/assets/`,
     ]);
   });
 

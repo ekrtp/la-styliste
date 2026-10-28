@@ -14,8 +14,8 @@ const SECRETS: readonly { what: string; re: RegExp }[] = [
   { what: 'a private key', re: /-----BEGIN [A-Z ]*PRIVATE KEY-----/ },
 ];
 
-/** Images and archives, allowed only under app/assets/. */
-const MEDIA = /\.(jpe?g|png|webp|heic|zip)$/i;
+/** Images, video, archives and databases (plus the app's .bak-v<N> backups), allowed only under app/assets/. */
+const MEDIA = /\.(jpe?g|png|webp|heic|heif|avif|gif|bmp|tiff?|mp4|mov|m4v|zip|tar|t?gz|7z|rar|db|sqlite3?)$|\.bak-v\d+$/i;
 
 /** Where the app's own icon and splash files live; the only place media may be committed. */
 const ASSETS_DIR = 'app/assets/';
@@ -25,8 +25,8 @@ export function findProblems(files: readonly StagedFile[], addedLines: readonly 
   const problems: string[] = [];
   for (const f of files) {
     if (f.path.startsWith(ASSETS_DIR)) continue;
-    if (MEDIA.test(f.path)) problems.push(`${f.path}: image or archive outside ${ASSETS_DIR}`);
-    else if (f.binary && f.bytes > MAX_BINARY_BYTES) problems.push(`${f.path}: binary over 200 KB outside ${ASSETS_DIR}`);
+    if (MEDIA.test(f.path)) problems.push(`${f.path}: image, video, archive or database outside ${ASSETS_DIR}`);
+    else if (f.binary && f.bytes > MAX_BINARY_BYTES) problems.push(`${f.path}: binary over ${MAX_BINARY_BYTES / 1024} KB outside ${ASSETS_DIR}`);
   }
   for (const line of addedLines) {
     for (const { what, re } of SECRETS) if (re.test(line)) problems.push(`an added line contains ${what}`);

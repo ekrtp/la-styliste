@@ -17,7 +17,7 @@ const files = paths.map((path) => ({
   // numstat prints "-<TAB>-" for a binary file.
   binary: git('diff', '--cached', '--numstat', '--', path).startsWith('-\t-\t'),
 }));
-const added = addedLines(git('diff', '--cached', '-U0', '--no-color'));
+const added = addedLines(git('diff', '--cached', '-U0', '--no-color', '--no-ext-diff', '--no-textconv', '--text'));
 
 const problems = findProblems(files, added);
 if (problems.length > 0) {
