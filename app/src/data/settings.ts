@@ -1,4 +1,4 @@
-import { inTransaction, type Db } from './db';
+import type { Db } from './db';
 import { InvalidSettingError } from './errors';
 
 /** Which look to draw: the phone's own, or always light, or always dark. */
@@ -60,9 +60,9 @@ export async function saveSettings(db: Db, patch: Partial<AppSettings>): Promise
     writes.push([SETTING_KEYS[name], JSON.stringify(value)]);
   }
   if (writes.length === 0) return;
-  await inTransaction(db, async () => {
+  await db.transaction(async (tx) => {
     for (const [key, value] of writes) {
-      await db.run('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value', [key, value]);
+      await tx.run('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value', [key, value]);
     }
   });
 }

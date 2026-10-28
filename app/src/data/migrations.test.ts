@@ -7,6 +7,13 @@ const version = async (db: Awaited<ReturnType<typeof dbAtVersion>>) =>
   (await db.first<{ user_version: number }>('PRAGMA user_version'))?.user_version;
 
 describe('migrate', () => {
+  it('runs every step exactly once when two migrations start together', async () => {
+    const steps = ['CREATE TABLE a (x INTEGER);', 'CREATE TABLE b (y INTEGER);'];
+    const db = openMemoryDb();
+    expect(await Promise.all([migrate(db, steps), migrate(db, steps)])).toEqual([2, 2]);
+    expect(await version(db)).toBe(2);
+  });
+
   it('brings a fresh database to the last version and creates the settings table', async () => {
     const db = openMemoryDb();
     expect(await migrate(db)).toBe(MIGRATIONS.length);

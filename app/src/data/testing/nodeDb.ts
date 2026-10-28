@@ -1,12 +1,14 @@
 import { DatabaseSync } from 'node:sqlite';
-import type { Db, SqlParam } from '../db';
+import { serialize, type Db, type SqlParam } from '../db';
 
 function wrap(d: DatabaseSync): Db {
-  return {
-    async exec(sql: string) {
+  // SQLite leaves foreign keys off per connection; the phone adapter turns them on too.
+  d.exec('PRAGMA foreign_keys = ON');
+  return serialize({
+    async exec(sql) {
       d.exec(sql);
     },
-    async run(sql: string, params: SqlParam[] = []) {
+    async run(sql, params: SqlParam[] = []) {
       const r = d.prepare(sql).run(...params);
       return { lastInsertRowId: Number(r.lastInsertRowid), changes: Number(r.changes) };
     },
@@ -16,12 +18,20 @@ function wrap(d: DatabaseSync): Db {
     async first<T>(sql: string, params: SqlParam[] = []) {
       return (d.prepare(sql).get(...params) ?? null) as unknown as T | null;
     },
-  };
+    async close() {
+      d.close();
+    },
+  });
 }
 
 /** In-memory SQLite on Node's built-in driver. Tests only. */
 export function openMemoryDb(): Db {
   return wrap(new DatabaseSync(':memory:'));
+}
+
+/** SQLite in a file, for tests that need a real path (`VACUUM INTO`). Tests only. */
+export function openFileDb(path: string): Db {
+  return wrap(new DatabaseSync(path));
 }
 
 /** A database exactly as an install left it at schema `version`: the first `version` migrations, applied. Tests only. */

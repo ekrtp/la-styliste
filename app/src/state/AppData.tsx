@@ -27,7 +27,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     let live = true;
     setError(null);
     (async () => {
-      const opened = await openAppDb();
+      const { db: opened } = await openAppDb();
       await migrate(opened);
       const loaded = await loadSettings(opened);
       if (!live) return;
