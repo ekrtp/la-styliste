@@ -1,0 +1,26 @@
+# Dependencies and build output
+node_modules/
+.expo/
+dist/
+
+# Generated native folders (EAS prebuild)
+/app/ios/
+/app/android/
+
+# User data never goes into this public repo: backups, photos, images outside the app's own assets
+*.zip
+*.jpg
+*.jpeg
+*.png
+*.webp
+*.heic
+!app/assets/**
+
+# Signing material and secrets
+*.mobileprovision
+*.p12
+*.p8
+*.key
+*.pem
+credentials.json
+.env*
