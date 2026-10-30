@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from './db';
 import { InvalidSettingError } from './errors';
 import { migrate } from './migrations';
-import { DEFAULT_SETTINGS, loadSettings, saveSettings, type ThemeMode } from './settings';
+import { DEFAULT_SETTINGS, loadSettings, pickSettings, saveSettings, type ThemeMode } from './settings';
 import { openMemoryDb } from './testing/nodeDb';
 
 let db: Db;
@@ -43,5 +43,9 @@ describe('settings', () => {
   it('never writes a name that is not a setting, even from untyped code', async () => {
     await saveSettings(db, { apiKey: 'x' } as never);
     expect(await db.all('SELECT * FROM settings')).toEqual([]);
+  });
+
+  it('picks only setting names out of a patch', () => {
+    expect(pickSettings({ themeMode: 'light', apiKey: 'x' } as never)).toEqual({ themeMode: 'light' });
   });
 });

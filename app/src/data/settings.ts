@@ -30,6 +30,15 @@ const PARSERS: { readonly [K in keyof AppSettings]: (raw: unknown) => AppSetting
 /** The setting names, in declaration order. */
 const NAMES = Object.keys(SETTING_KEYS) as (keyof AppSettings)[];
 
+/** The part of `patch` that names real settings: what may enter the settings held in memory. */
+export function pickSettings(patch: Partial<AppSettings>): Partial<AppSettings> {
+  const picked: Partial<AppSettings> = {};
+  for (const name of NAMES) {
+    if (Object.hasOwn(patch, name)) (picked as Record<keyof AppSettings, unknown>)[name] = patch[name];
+  }
+  return picked;
+}
+
 function parseStored<K extends keyof AppSettings>(name: K, text: string): AppSettings[K] | null {
   try {
     return PARSERS[name](JSON.parse(text));
