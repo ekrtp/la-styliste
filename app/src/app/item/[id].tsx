@@ -1,6 +1,6 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { CHOSEN_STATUSES, type ChosenStatus } from '../../core/tags';
 import { getItem, getPhoto, setItemStatus, updateItem, type Item, type Photo } from '../../data/items';
 import { draftFromTags, tagsFromDraft, type TagDraft } from '../../features/items/draft';
@@ -90,9 +90,15 @@ export default function ItemScreen() {
   };
 
   return (
-    <KeyboardAvoidingView behavior="padding" style={styles.root}>
+    <View style={styles.root}>
       <Stack.Screen options={{ title: itemTitle(item) }} />
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      {/* iOS insets the scroll view for the keyboard itself; KeyboardAvoidingView fell short by the header's height. */}
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        automaticallyAdjustKeyboardInsets
+      >
         <View style={styles.photo}>
           <PhotoImage photoId={item.primaryPhotoId} size="display" />
         </View>
@@ -135,6 +141,6 @@ export default function ItemScreen() {
           </>
         )}
       </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
   );
 }

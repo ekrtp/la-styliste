@@ -4,7 +4,8 @@ A personal wardrobe and outfit app for one iPhone: photograph a garment, let the
 and get three reasoned outfit suggestions each morning from the weather, the occasion and what was worn lately.
 Everything stays on the phone. Design: [`docs/superpowers/specs/2026-10-28-la-styliste-design.md`](docs/superpowers/specs/2026-10-28-la-styliste-design.md).
 
-Status: **M0 skeleton** — four empty tabs, settings, the guards. See the release plan in the spec (§3).
+Status: **M1a wardrobe**: add items with a photo and a tag form, a filtered grid, an item screen with edit and
+status. Backup arrives with M1b. See the release plan in the spec (§3).
 
 ## Requirements
 

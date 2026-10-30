@@ -3408,12 +3408,16 @@ From `app/`: `npx eas-cli@latest update --branch preview --platform ios --enviro
 
 Open the update in Expo Go and check:
 
-1. The app opens on the theme chosen in M0 (the v1 → v2 migration kept the settings).
+1. Before opening M1a, open the M0 update (group `a5d0cfed`, same project, same data) and set Ayarlar → "Açık". Then open
+   the M1a update: it starts light (the v1 → v2 migration kept the settings; dark is the default, so this is the only
+   way the check can fail).
 2. Add five items by hand: at least one each of Zeminde, Askıda and Üstümde, at least one from the camera and one from the library. Each appears in the grid at once.
 3. One transparent image: in Photos, touch and hold a garment until it lifts, choose Share → Save Image, then add that image from the library. The item screen says "Arka plan şeffaf" (the picker kept alpha, spec §13 row 2) and the grid cell shows the garment on the cell colour, with no white or black box (WEBP kept alpha, spec §13 row 3).
 4. Close Expo Go completely and reopen the project: the five items are still there.
 5. The slot chips filter the grid; "Diğer filtreler" opens status, formality, season and texture.
 6. Edit an item's colour and price, save: the item screen shows the change. Set one item to "Arşivde": it leaves the default grid and appears with the Arşivde filter.
+7. Crash safety: fill the form for a sixth item, tap Kaydet and at once swipe Expo Go away. Reopen: the item is either
+   there with its photo, or not there at all; never a cell with the placeholder shirt.
 
 Record the result under this step (pass, or what failed). For check 3, also record which of the two §13 rows failed, if one did: "Arka plan şeffaf" missing means the picker lost alpha; a box in the grid means WEBP did.
 
@@ -3422,5 +3426,14 @@ Record the result under this step (pass, or what failed). For check 3, also reco
 ## Handover to M1b
 
 M1b starts with: backup export (spec §10 steps 1–5, fflate streaming, `expo-sharing`), staged import (§10 steps 1–7 with the safety copy and the `photos.incoming` swap), the backup nudge and the `last_export_at` / `changes_since_export` settings, then the recovery screen's raw export and `.bak` restore (M1a decision 6), and the handover-6 test of a mixed valid and invalid settings patch once those settings exist. Packages to install then: `fflate`, `expo-sharing`, `expo-document-picker`.
+
+From the M1a final review (2026-10-30):
+
+- AppData must finish or roll back a leftover `photos.incoming` / `photos.old` (spec §10 import step 7) **before**
+  `sweepPhotos` runs; otherwise the sweep judges folders against a half-swapped state.
+- The sweep already refuses to delete orphans when the database has zero photo rows (the state an import passes
+  through); keep that guard when the import code changes the sweep.
+- Picker copies are deleted after a save, a re-pick or a close (`discardPicked`); M2's bulk mode must do the same.
+- An opaque RGBA PNG (most screenshots) counts as "already cut out" in M1a (spec §6 note): N1 rechecks it.
 
 Later: camera and photo-library permission strings in `app.json` (`expo-image-picker` plugin) before the N1 build; the remaining M0 "Later" list.

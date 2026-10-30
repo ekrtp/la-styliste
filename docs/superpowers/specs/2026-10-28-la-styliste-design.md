@@ -61,7 +61,7 @@ next milestone.
 | **M0 Skeleton** | "It opens on my phone" | Project on SDK 58 with zirt-dongum patterns copied (Db, migrations, theme, `makeStyles`, `Text`, labels, vitest), four tabs, dark theme, network guard, `.gitignore`, public-repo gate, README | Opens in Expo Go; `npm test`, `npm run typecheck`, `npx expo export -p ios` and `npm run check:public` pass; README covers Windows setup, `npx expo start` (LAN, else `--tunnel`), Expo Go login and the gates |
 | **M1 Wardrobe** | "My clothes are in it" | Add item from camera or library with a photo kind (flat / hanger / worn), alpha check, resize, crash-safe save; manual tag form; grid with filters; item detail and edit; status; backup export and staged import; backup nudge | Five items added by hand; exported to Files; the app's data deleted and restored from that zip with identical items and photos |
 | **M2 AI tagging** | "It tags for me" | Key entry, editable model list, JS-side LLM image, tagging call (tags + brand, condition, resale value), AI-guess markers, value correction factor, "Değeri yeniden tahmin et", wardrobe value line, draft items, crash-safe queue with its own screen, quota badge, Turkish errors | 100–200 flat/hanger items added in one evening; killing the app mid-queue loses no result; worn photos wait in the queue for N1; after three value corrections, new estimates show the correction factor |
-| **M3 Outfits** | "I can record what I wear" | Outfit builder by slot (all slots, accessories included), save and rate (-1/0/1), "Bugün bunu giydim" with an optional mirror photo, wear log, cost per wear | Three wear-log entries survive an app restart; cost per wear shows on an item with a price |
+| **M3 Outfits** | "I can record what I wear" | Outfit builder by slot (all slots, accessories included), save and rate (-1/0/1), "Bugün bunu giydim" with an optional mirror photo, extra worn fit photos per item (§5), wear log, cost per wear | Three wear-log entries survive an app restart; cost per wear shows on an item with a price |
 | **M4 Bugün ne giysem** | "It dresses me in the morning" | Weather, occasion rules editable in Settings, rule engine with tests, local top 3 at once, one LLM call upgrades the reasons, keyless mode | With three ratings in the database, changing the date gives a different list and a −1 outfit never appears; with the key removed, three suggestions still appear |
 | **N1 Native vision** | "It cleans my photos" | `eas.json`, `app.config.ts` variants, `eas device:create`, Developer Mode, dev client, local module `wardrobe-vision`, preview build, Expo Go → preview data move, device test on 20 real photos, one-time reprocess of stored originals, worn queue released | Dev build and preview build installed; Expo Go backup restored into the preview copy and checked; flat/hanger photos show as cut-outs; a worn photo goes to tagging with the face filled; README gains the build, install and yearly-rebuild steps |
 
@@ -182,7 +182,10 @@ keeps PNG alpha and HEIC bytes. The user picks the photo kind before shooting.
 **Alpha check.** JPEG has none. For PNG, read the IHDR colour type (byte 25:
 4 or 6) or a `tRNS` chunk in JS. HEIC alpha needs the native `hasAlpha(uri)`
 from N1; until then HEIC is treated as opaque. An image with alpha is kept as
-`original.png`, gets `cutout_state = done`, and N1 never reprocesses it.
+`original.png` and gets `cutout_state = done`. An alpha *channel* is not proof of
+transparency: most screenshots are RGBA with every pixel opaque. N1's `hasAlpha`
+therefore tests the pixels, and N1 rechecks PNG originals marked `done` once
+(added 2026-10-30, M1a final review).
 
 **Resize and encode.** `expo-image-manipulator` contextual API:
 `manipulate(uri).resize(...).renderAsync()` then `saveAsync({format})`. Always
@@ -613,3 +616,5 @@ Full research digests: workflow runs `wf_73b7b5c2-93b` (2026-10-26),
 | 2026-10-28 | Faces filled automatically on device before upload; no manual crop; worn photos only to non-collecting (paid) models |
 | 2026-10-28 | Second-hand value, brand and condition prefilled by the tagging call as editable AI guesses; user corrections calibrate later estimates |
 | 2026-10-28 | Spec review: draft items and a stored job result; staged import with a durable safety copy; paths derived from ids; one preview build as the primary copy instead of TestFlight; recommender weights as constants, only occasion rules editable; `impressions`, exploration slots and weather bonuses cut |
+| 2026-10-28 | M1 split into M1a (wardrobe) and M1b (backup); see the M1a plan's decisions table |
+| 2026-10-30 | M1a final review: extra fit photos per item go to M3; an alpha channel is not proof of a cut-out (§6) |
