@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo } from 'react';
 import { Recovery } from '../features/recovery/Recovery';
 import { AppDataProvider, useAppData } from '../state/AppData';
+import { TAB_TR } from '../ui/labels';
 import { makeNavigationTheme } from '../ui/navigationTheme';
 import { ThemeProvider, useTheme } from '../ui/themes';
 
@@ -55,6 +56,7 @@ function Shell() {
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.colors.bg } }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="add" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="item/[id]" options={{ headerShown: true, title: '', headerBackTitle: TAB_TR.index }} />
       </Stack>
     </NavigationThemeProvider>
   );
