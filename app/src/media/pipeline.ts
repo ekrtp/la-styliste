@@ -49,7 +49,11 @@ export async function preparePhoto(asset: ImagePickerAsset, kind: ItemPhotoKind)
     staging.rename(id);
     return { id, kind, originalExt, ...initialPhotoStates(kind, hasAlpha) };
   } catch (e) {
-    if (staging.exists) staging.delete();
+    try {
+      if (staging.exists) staging.delete();
+    } catch {
+      // Keep the real error; the launch sweep removes leftover staging folders.
+    }
     throw e;
   }
 }
@@ -57,13 +61,14 @@ export async function preparePhoto(asset: ImagePickerAsset, kind: ItemPhotoKind)
 /** Decodes `uri` no larger than `max` on either side (aspect kept, EXIF orientation applied), encodes it with `options` and moves it to `target`. */
 async function render(uri: string, max: number, options: SaveOptions, target: File): Promise<void> {
   const context = ImageManipulator.manipulate(uri, { maxWidth: max, maxHeight: max });
-  const image = await context.renderAsync();
+  let image: Awaited<ReturnType<typeof context.renderAsync>> | null = null;
   try {
+    image = await context.renderAsync();
     const saved = await image.saveAsync(options);
     await new File(saved.uri).move(target);
   } finally {
     // Native image buffers are freed by hand: a bulk session decodes hundreds of photos.
-    image.release();
+    image?.release();
     context.release();
   }
 }

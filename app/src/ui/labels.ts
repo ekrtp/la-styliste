@@ -1,5 +1,6 @@
 import type { ThemeMode } from '../data/settings';
 import type { CutoutState } from '../core/photo';
+import { CHOSEN_STATUSES } from '../core/tags';
 import type {
   ChosenStatus, Color, Condition, Detail, ItemPhotoKind, Material, Pattern, PhotoKind, Scale, Season,
   Silhouette, Slot, Status, Subcategory, Texture,
@@ -262,4 +263,4 @@ export const CUTOUT_TR: Record<CutoutState, string> = {
 };
 
 /** Statuses as the item screen and the filter list them. */
-export const CHOSEN_STATUS_TR: Record<ChosenStatus, string> = STATUS_TR;
+export const CHOSEN_STATUS_TR = Object.fromEntries(CHOSEN_STATUSES.map((status) => [status, STATUS_TR[status]])) as Record<ChosenStatus, string>;

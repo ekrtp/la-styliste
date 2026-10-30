@@ -94,6 +94,7 @@ export function ItemForm({ draft, onChange }: { draft: TagDraft; onChange(draft:
       </Field>
       <Field label="Marka">
         <TextInput
+          accessibilityLabel="Marka"
           value={draft.brand}
           onChangeText={set('brand')}
           placeholder="Bilmiyorsan boş bırak"
@@ -104,6 +105,7 @@ export function ItemForm({ draft, onChange }: { draft: TagDraft; onChange(draft:
       </Field>
       <Field label="Fiyat (TL)">
         <TextInput
+          accessibilityLabel="Fiyat (TL)"
           value={draft.price}
           onChangeText={set('price')}
           keyboardType="decimal-pad"
@@ -113,7 +115,7 @@ export function ItemForm({ draft, onChange }: { draft: TagDraft; onChange(draft:
         />
       </Field>
       <Field label="Not">
-        <TextInput value={draft.notes} onChangeText={set('notes')} multiline style={[styles.input, styles.notes]} />
+        <TextInput accessibilityLabel="Not" value={draft.notes} onChangeText={set('notes')} multiline style={[styles.input, styles.notes]} />
       </Field>
     </View>
   );

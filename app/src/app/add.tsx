@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import type { ImagePickerAsset } from 'expo-image-picker';
-import { router } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,7 +8,7 @@ import type { ItemPhotoKind } from '../core/tags';
 import { addItem } from '../features/items/addItem';
 import { EMPTY_DRAFT, tagsFromDraft } from '../features/items/draft';
 import { ItemForm } from '../features/items/ItemForm';
-import { PermissionDeniedError, pickPhoto, type PhotoSource } from '../media/pick';
+import { discardPicked, PermissionDeniedError, pickPhoto, type PhotoSource } from '../media/pick';
 import { LowStorageError } from '../media/pipeline';
 import { useAppData, useDb } from '../state/AppData';
 import { Button } from '../ui/Button';
@@ -65,6 +65,8 @@ export default function AddScreen() {
     try {
       await addItem(db, asset, kind, result.tags);
       changed();
+      // The saved copies live in the documents folder; the picker's full-size file is no longer needed.
+      discardPicked(asset);
       router.back();
     } catch (e) {
       setMessage(e instanceof LowStorageError ? 'Telefonda yer kalmadı. Biraz yer açıp tekrar dene.' : 'Kaydedilemedi, tekrar dene.');
@@ -73,15 +75,27 @@ export default function AddScreen() {
     }
   };
 
+  const pickAnother = () => {
+    if (asset !== null) discardPicked(asset);
+    setAsset(null);
+  };
+
+  const close = () => {
+    if (asset !== null) discardPicked(asset);
+    router.back();
+  };
+
   const messageLine = message !== null && <Caption style={styles.error}>{message}</Caption>;
 
   return (
     <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
+      {/* A swipe-down would drop the photo and the form, or pop the wrong screen during a save. */}
+      <Stack.Screen options={{ gestureEnabled: asset === null && !saving }} />
       <KeyboardAvoidingView behavior="padding" style={styles.fill}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
           <View style={styles.header}>
             <Title>Parça ekle</Title>
-            <Button label="Kapat" disabled={saving} onPress={() => router.back()} />
+            <Button label="Kapat" disabled={saving} onPress={close} />
           </View>
           {kind === null ? (
             <View style={styles.choices}>
@@ -101,7 +115,7 @@ export default function AddScreen() {
           ) : (
             <>
               <Image source={{ uri: asset.uri }} style={styles.preview} contentFit="contain" />
-              <Button label="Başka fotoğraf seç" disabled={saving} onPress={() => setAsset(null)} />
+              <Button label="Başka fotoğraf seç" disabled={saving} onPress={pickAnother} />
               <ItemForm draft={draft} onChange={setDraft} />
               {messageLine}
               {saving ? <ActivityIndicator color={colors.text} /> : <Button kind="primary" label="Kaydet" onPress={save} />}

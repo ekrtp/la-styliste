@@ -15,6 +15,10 @@ describe('planSweep', () => {
     expect(planSweep(folders, new Set())).toEqual({ staging: [], orphans: [], keptOrphans: 6 });
   });
 
+  it('keeps every orphan when the database has no photo rows', () => {
+    expect(planSweep(['lost0001'], new Set())).toEqual({ staging: [], orphans: [], keptOrphans: 1 });
+  });
+
   it('never touches a folder whose name is not a photo id', () => {
     expect(planSweep(['.hidden', 'short', 'a b c d e f', 'x/y.tmp'], new Set())).toEqual({ staging: [], orphans: [], keptOrphans: 0 });
   });

@@ -2,6 +2,7 @@ import { Stack, ThemeProvider as NavigationThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo } from 'react';
+import { View } from 'react-native';
 import { Recovery } from '../features/recovery/Recovery';
 import { AppDataProvider, useAppData } from '../state/AppData';
 import { TAB_TR } from '../ui/labels';
@@ -48,7 +49,8 @@ function Shell() {
       </>
     );
   }
-  if (!ready) return null;
+  // The native splash covers this on a cold start; it only shows on a retry, after the splash is gone.
+  if (!ready) return <View style={{ flex: 1, backgroundColor: theme.colors.bg }} />;
 
   return (
     <NavigationThemeProvider value={navigationTheme}>

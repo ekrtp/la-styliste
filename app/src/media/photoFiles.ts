@@ -1,4 +1,4 @@
-import { Directory, File, Paths } from 'expo-file-system';
+import { Directory, Paths } from 'expo-file-system';
 import type { Db } from '../data/db';
 import { allPhotoIds } from '../data/items';
 import { DISPLAY_FILE, planSweep, STAGING_SUFFIX, THUMB_FILE, type SweepPlan } from './layout';
@@ -17,12 +17,23 @@ export function stagingDir(id: string): Directory {
   return new Directory(photosRoot(), `${id}${STAGING_SUFFIX}`);
 }
 
+let photosRootUri: string | null = null;
+
+/** The photos root URI with a trailing slash, computed once: the grid asks for a URI per cell on every render. */
+function rootUri(): string {
+  if (photosRootUri === null) {
+    const uri = photosRoot().uri;
+    photosRootUri = uri.endsWith('/') ? uri : `${uri}/`;
+  }
+  return photosRootUri;
+}
+
 export function displayUri(photoId: string): string {
-  return new File(photoDir(photoId), DISPLAY_FILE).uri;
+  return `${rootUri()}${photoId}/${DISPLAY_FILE}`;
 }
 
 export function thumbUri(photoId: string): string {
-  return new File(photoDir(photoId), THUMB_FILE).uri;
+  return `${rootUri()}${photoId}/${THUMB_FILE}`;
 }
 
 /** Deletes a photo's folder if it is there. */
@@ -38,7 +49,14 @@ export async function sweepPhotos(db: Db): Promise<SweepPlan | null> {
     if (!root.exists) return null;
     const folders = root.list().flatMap((entry) => (entry instanceof Directory ? [entry.name] : []));
     const plan = planSweep(folders, await allPhotoIds(db));
-    for (const name of [...plan.staging, ...plan.orphans]) new Directory(root, name).delete();
+    for (const name of [...plan.staging, ...plan.orphans]) {
+      // One stuck folder must not keep the others from being cleaned.
+      try {
+        new Directory(root, name).delete();
+      } catch {
+        // The next launch tries again.
+      }
+    }
     return plan;
   } catch {
     return null;

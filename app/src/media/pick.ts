@@ -1,3 +1,4 @@
+import { File } from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
 
 /** Only this combination keeps PNG alpha and HEIC bytes (spec §6): no editing, full quality, the current representation. */
@@ -28,4 +29,14 @@ export async function pickPhoto(source: PhotoSource): Promise<ImagePicker.ImageP
   }
   const result = source === 'camera' ? await ImagePicker.launchCameraAsync(PICKER_OPTIONS) : await ImagePicker.launchImageLibraryAsync(PICKER_OPTIONS);
   return result.canceled ? null : result.assets[0];
+}
+
+/** Deletes the picker's full-size copy from the cache. Best effort: the OS clears the cache eventually, so a failure is ignored. */
+export function discardPicked(asset: ImagePicker.ImagePickerAsset): void {
+  try {
+    const file = new File(asset.uri);
+    if (file.exists) file.delete();
+  } catch {
+    // Nothing to do: the file may be gone or not ours to delete.
+  }
 }

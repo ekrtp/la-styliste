@@ -23,10 +23,13 @@ export interface SweepPlan {
   keptOrphans: number;
 }
 
-/** Which photo folders to delete, from the folder names on disk and the photo ids in the database. Names that are not ids are never touched. */
+/**
+ * Which photo folders to delete, from the folder names on disk and the photo ids in the database. Names that are not ids are never touched.
+ * A database with no photo rows deletes no orphans: it is a fresh or just-imported one, and every folder would look like an orphan.
+ */
 export function planSweep(folders: readonly string[], photoIds: ReadonlySet<string>): SweepPlan {
   const staging = folders.filter((name) => name.endsWith(STAGING_SUFFIX) && ID_PATTERN.test(name.slice(0, -STAGING_SUFFIX.length)));
   const orphans = folders.filter((name) => ID_PATTERN.test(name) && !photoIds.has(name));
-  const tooMany = orphans.length > ORPHAN_DELETE_LIMIT;
+  const tooMany = photoIds.size === 0 || orphans.length > ORPHAN_DELETE_LIMIT;
   return { staging, orphans: tooMany ? [] : orphans, keptOrphans: tooMany ? orphans.length : 0 };
 }

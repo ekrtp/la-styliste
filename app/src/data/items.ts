@@ -126,7 +126,7 @@ export async function updateItem(db: Db, id: string, tags: ItemTags, now: Date =
     now.toISOString(),
     id,
   ]);
-  if (changes === 0) throw new Error(`No item ${id}`);
+  if (changes === 0) throw new Error(`No non-draft item ${id}`);
 }
 
 /** Sets a status a person chooses. Throws when there is no such item, or it is still a draft. */
