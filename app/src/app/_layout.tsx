@@ -54,6 +54,7 @@ function Shell() {
       {statusBar}
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.colors.bg } }}>
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="add" options={{ presentation: 'modal' }} />
       </Stack>
     </NavigationThemeProvider>
   );
