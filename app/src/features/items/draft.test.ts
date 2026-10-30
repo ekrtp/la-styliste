@@ -31,6 +31,13 @@ describe('parsePrice', () => {
     ['abc', undefined],
     ['-5', undefined],
     ['1,234,5', undefined],
+    ['12.5', 12.5],
+    ['12.50', 12.5],
+    ['1.25', 1.25],
+    ['1.234.567', 1234567],
+    ['1250,5', 1250.5],
+    ['1.2.3', undefined],
+    ['12.345,6.7', undefined],
   ] as const)('reads %j as %j', (text, expected) => {
     expect(parsePrice(text)).toBe(expected);
   });
@@ -43,7 +50,18 @@ describe('tagsFromDraft', () => {
 
   it('says how to write a price it cannot read', () => {
     const result = tagsFromDraft({ ...EMPTY_DRAFT, slot: 'top', price: '12 TL' });
-    expect(result.ok).toBe(false);
+    expect(result).toEqual({ ok: false, message: 'Fiyatı rakamla yaz, örneğin 1250 ya da 1.250,50.' });
+  });
+
+  it('names the field the schema rejected', () => {
+    expect(tagsFromDraft({ ...EMPTY_DRAFT, slot: 'top', price: '2.000.000' })).toEqual({
+      ok: false,
+      message: 'Fiyat en fazla 1.000.000 TL olabilir.',
+    });
+    expect(tagsFromDraft({ ...EMPTY_DRAFT, slot: 'top', colors: ['black', 'white', 'red', 'blue', 'green'] })).toEqual({
+      ok: false,
+      message: 'En fazla 4 renk seçebilirsin.',
+    });
   });
 
   it('turns a slot alone into tags with empty fields, and blank text into null', () => {

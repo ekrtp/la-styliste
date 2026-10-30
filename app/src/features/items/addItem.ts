@@ -11,7 +11,11 @@ export async function addItem(db: Db, asset: ImagePickerAsset, kind: ItemPhotoKi
   try {
     return await createItemWithPhoto(db, tags, photo);
   } catch (e) {
-    deletePhotoDir(photo.id);
+    try {
+      deletePhotoDir(photo.id);
+    } catch {
+      // Keep the real save error; the launch sweep removes a leftover folder.
+    }
     throw e;
   }
 }

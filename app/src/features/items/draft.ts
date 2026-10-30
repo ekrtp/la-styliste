@@ -81,17 +81,32 @@ export function withSlot(d: TagDraft, slot: Slot | null): TagDraft {
   return { ...d, slot, subcategory: fits ? d.subcategory : null };
 }
 
-/** Blank → null; Turkish digits ("1.250,50") or plain ("1250") → the number; anything else → undefined. */
+/**
+ * Reads a typed price, whitespace ignored. Blank → null; anything that matches none of these → undefined.
+ * - digits: "1250"
+ * - Turkish groups of three: "1.250", "1.234.567" (this reading wins the "1.250" ambiguity)
+ * - Turkish decimal comma, with or without groups: "1.250,50", "12,5", "1250,5"
+ * - one "." and 1–2 digits, no comma (non-Turkish decimal pad): "12.5", "12.50", "1.25"
+ */
 export function parsePrice(text: string): number | null | undefined {
   const t = text.replace(/\s/g, '');
   if (t === '') return null;
-  // In Turkish "." groups thousands and "," marks decimals; the iPhone's Turkish decimal pad types ",".
-  const normal = t.replace(/\./g, '').replace(',', '.');
-  if (!/^\d+(\.\d{1,2})?$/.test(normal)) return undefined;
-  return Number(normal);
+  if (/^\d+$/.test(t)) return Number(t);
+  if (/^\d{1,3}(\.\d{3})+$/.test(t)) return Number(t.replace(/\./g, ''));
+  if (/^\d{1,3}(\.\d{3})+,\d{1,2}$/.test(t) || /^\d+,\d{1,2}$/.test(t)) return Number(t.replace(/\./g, '').replace(',', '.'));
+  if (/^\d+\.\d{1,2}$/.test(t)) return Number(t);
+  return undefined;
 }
 
 export type DraftResult = { ok: true; tags: ItemTags } | { ok: false; message: string };
+
+// What to tell the person when the schema rejects a field; the limits match ItemTagsSchema.
+const INVALID_FIELD_MESSAGE: Readonly<Record<string, string>> = {
+  price: 'Fiyat en fazla 1.000.000 TL olabilir.',
+  colors: 'En fazla 4 renk seçebilirsin.',
+  brand: 'Marka en fazla 60 karakter olabilir.',
+  notes: 'Not en fazla 500 karakter olabilir.',
+};
 
 /** Checks the form. The message is Turkish and says what to fix. */
 export function tagsFromDraft(d: TagDraft): DraftResult {
@@ -117,7 +132,7 @@ export function tagsFromDraft(d: TagDraft): DraftResult {
     price,
     notes: notes === '' ? null : notes,
   });
-  return parsed.success
-    ? { ok: true, tags: parsed.data }
-    : { ok: false, message: 'Bazı alanlar geçersiz: en fazla 4 renk, marka en fazla 60, not en fazla 500 karakter.' };
+  if (parsed.success) return { ok: true, tags: parsed.data };
+  const field = parsed.error.issues[0]?.path[0];
+  return { ok: false, message: (typeof field === 'string' ? INVALID_FIELD_MESSAGE[field] : undefined) ?? 'Bazı alanlar geçersiz.' };
 }

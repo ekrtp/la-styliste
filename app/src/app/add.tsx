@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import type { ImagePickerAsset } from 'expo-image-picker';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { ItemPhotoKind } from '../core/tags';
@@ -38,6 +38,8 @@ export default function AddScreen() {
   const [asset, setAsset] = useState<ImagePickerAsset | null>(null);
   const [draft, setDraft] = useState(EMPTY_DRAFT);
   const [saving, setSaving] = useState(false);
+  // Set synchronously so a second tap before the re-render cannot start a second save.
+  const savingRef = useRef(false);
   const [message, setMessage] = useState<string | null>(null);
 
   const pick = async (source: PhotoSource) => {
@@ -51,12 +53,13 @@ export default function AddScreen() {
   };
 
   const save = async () => {
-    if (kind === null || asset === null) return;
+    if (savingRef.current || kind === null || asset === null) return;
     const result = tagsFromDraft(draft);
     if (!result.ok) {
       setMessage(result.message);
       return;
     }
+    savingRef.current = true;
     setSaving(true);
     setMessage(null);
     try {
@@ -65,6 +68,7 @@ export default function AddScreen() {
       router.back();
     } catch (e) {
       setMessage(e instanceof LowStorageError ? 'Telefonda yer kalmadı. Biraz yer açıp tekrar dene.' : 'Kaydedilemedi, tekrar dene.');
+      savingRef.current = false;
       setSaving(false);
     }
   };
@@ -74,10 +78,10 @@ export default function AddScreen() {
   return (
     <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
       <KeyboardAvoidingView behavior="padding" style={styles.fill}>
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
           <View style={styles.header}>
             <Title>Parça ekle</Title>
-            <Button label="Kapat" onPress={() => router.back()} />
+            <Button label="Kapat" disabled={saving} onPress={() => router.back()} />
           </View>
           {kind === null ? (
             <View style={styles.choices}>
@@ -97,7 +101,7 @@ export default function AddScreen() {
           ) : (
             <>
               <Image source={{ uri: asset.uri }} style={styles.preview} contentFit="contain" />
-              <Button label="Başka fotoğraf seç" onPress={() => setAsset(null)} />
+              <Button label="Başka fotoğraf seç" disabled={saving} onPress={() => setAsset(null)} />
               <ItemForm draft={draft} onChange={setDraft} />
               {messageLine}
               {saving ? <ActivityIndicator color={colors.text} /> : <Button kind="primary" label="Kaydet" onPress={save} />}
